@@ -6,34 +6,6 @@ import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { Project } from "@/types";
 
-// Mismo mock del listado, para poder probar el detalle sin backend
-const MOCK_PROJECTS: Project[] = [
-  {
-    id: "1",
-    title: "EcoBici Comunitaria",
-    description:
-      "Proyecto para fabricar bicicletas con materiales reciclados para la comunidad. Buscamos financiar herramientas, materiales y talleres de capacitación para jóvenes del barrio.",
-    imageUrl: null,
-    fundingGoal: 5000,
-    currentAmount: 1250,
-    deadline: "2026-12-31T23:59:59Z",
-    status: "ACTIVE",
-    createdAt: "2026-09-05T12:30:00Z",
-  },
-  {
-    id: "2",
-    title: "Huerto Urbano Barrio Sur",
-    description:
-      "Creación de un huerto comunitario para fomentar la seguridad alimentaria en el sector.",
-    imageUrl: null,
-    fundingGoal: 3000,
-    currentAmount: 2900,
-    deadline: "2026-11-15T23:59:59Z",
-    status: "ACTIVE",
-    createdAt: "2026-09-01T10:00:00Z",
-  },
-];
-
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [project, setProject] = useState<Project | null>(null);
@@ -46,12 +18,7 @@ export default function ProjectDetailPage() {
         const data = await apiFetch<Project>(`/projects/${id}`);
         setProject(data);
       } catch {
-        const mock = MOCK_PROJECTS.find((p) => p.id === id);
-        if (mock) {
-          setProject(mock);
-        } else {
-          setNotFound(true);
-        }
+        setNotFound(true);
       } finally {
         setLoading(false);
       }

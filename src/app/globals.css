@@ -24,3 +24,10 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Forzar tema claro: las pantallas están diseñadas para fondo claro */
+:root {
+  color-scheme: light;
+  --background: #ffffff;
+  --foreground: #171717;
+}

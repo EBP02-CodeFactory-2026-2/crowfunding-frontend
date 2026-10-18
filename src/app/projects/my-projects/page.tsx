@@ -28,7 +28,9 @@ export default function MyProjectsPage() {
       sessionStorage.removeItem("flash");
     }
     apiFetch<Project[]>("/projects/me", {}, true)
-      .then((data) => setProjects(data ?? []))
+      .then((data) =>
+        setProjects((data ?? []).filter((p) => (p.status as string) !== "DELETED"))
+      )
       .catch((e: ApiError) =>
         setError(`No se pudieron cargar tus proyectos (${e.status ?? "sin conexión"}).`)
       )

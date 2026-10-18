@@ -8,6 +8,13 @@ import { getToken } from "@/lib/auth";
 import { Project, ApiError } from "@/types";
 import RiskLabel from "@/components/RiskLabel";
 
+// Fila que devuelve GET /projects/me (solo usamos estos campos)
+type MyProjectRow = {
+  id: string;
+  currentAmount?: number;
+  backersCount?: number;
+};
+
 export default function ProjectDetailsPage() {
   const params = useParams();
   const router = useRouter();
@@ -19,13 +26,33 @@ export default function ProjectDetailsPage() {
   const [amountError, setAmountError] = useState<string | null>(null);
   const [supporting, setSupporting] = useState(false);
   const [thanks, setThanks] = useState(false);
+  const [myStats, setMyStats] = useState<{
+    currentAmount: number;
+    backersCount: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!id) return;
     apiFetch<Project>(`/projects/${id}`)
-      .then(setProject)
+      .then((p) => setProject((p.status as string) === "DELETED" ? null : p))
       .catch((e) => console.error(e))
       .finally(() => setLoading(false));
+  }, [id]);
+
+  // Si el proyecto es del usuario con sesión iniciada, trae sus estadísticas
+  useEffect(() => {
+    if (!id || !getToken()) return;
+    apiFetch<MyProjectRow[]>("/projects/me", {}, true)
+      .then((mine) => {
+        const row = (mine ?? []).find((p) => p.id === id);
+        if (row) {
+          setMyStats({
+            currentAmount: row.currentAmount ?? 0,
+            backersCount: row.backersCount ?? 0,
+          });
+        }
+      })
+      .catch(() => {});
   }, [id]);
 
   async function handleSupport() {
@@ -55,8 +82,8 @@ export default function ProjectDetailsPage() {
           method: "POST",
           body: JSON.stringify({
             amount: value,
-            paymentMethod: "CARD", 
-            nonce: crypto.randomUUID(), 
+            paymentMethod: "CARD",
+            nonce: crypto.randomUUID(),
           }),
         },
         true
@@ -93,6 +120,14 @@ export default function ProjectDetailsPage() {
         </div>
       </div>
 
+      {project.imageUrl && (
+        <img
+          src={project.imageUrl}
+          alt={project.title}
+          className="w-full h-72 object-cover rounded-xl mb-8"
+        />
+      )}
+
       <div className="bg-gray-50 p-6 rounded-xl mb-8 border border-gray-100">
         <div className="flex justify-between text-lg font-bold text-gray-800 mb-2">
           <span>Recaudado: ${raised.toLocaleString()}</span>
@@ -108,6 +143,35 @@ export default function ProjectDetailsPage() {
           {progress.toFixed(1)}% completado
         </p>
       </div>
+
+      {myStats && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-8">
+          <h3 className="text-lg font-bold text-amber-900 mb-3">
+            Estadísticas de tu campaña{" "}
+            <span className="text-sm font-normal">(solo las ves tú)</span>
+          </h3>
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <p className="text-2xl font-extrabold text-gray-900">
+                ${myStats.currentAmount.toLocaleString()}
+              </p>
+              <p className="text-sm text-gray-700">Recaudado</p>
+            </div>
+            <div>
+              <p className="text-2xl font-extrabold text-gray-900">
+                {progress.toFixed(1)}%
+              </p>
+              <p className="text-sm text-gray-700">De la meta</p>
+            </div>
+            <div>
+              <p className="text-2xl font-extrabold text-gray-900">
+                {myStats.backersCount}
+              </p>
+              <p className="text-sm text-gray-700">Aportantes</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mb-8">
         <h2 className="text-xl font-bold text-gray-800 mb-3">Acerca de este proyecto</h2>

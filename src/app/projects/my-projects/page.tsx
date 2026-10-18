@@ -49,7 +49,9 @@ export default function MyProjectsPage() {
       );
       setFlash("Proyecto publicado con éxito");
     } catch (e) {
-      setError((e as ApiError).message || "No se pudo publicar el proyecto.");
+      const err = e as ApiError;
+      const reason = err.details?.map((d) => d.issue).join(" ");
+      setError([err.message, reason].filter(Boolean).join(": ") || "No se pudo publicar el proyecto.");
     } finally {
       setPublishingId(null);
     }
@@ -107,6 +109,11 @@ export default function MyProjectsPage() {
               </p>
             </div>
             <div className="flex gap-4 items-center">
+              {p.status === "ACTIVE" && (
+                <Link href={`/projects/${p.id}/edit`} className="text-indigo-700 font-semibold hover:underline">
+                  Editar
+                </Link>
+              )}
               {p.status === "DRAFT" && (
                 <>
                   <Link href={`/projects/${p.id}/edit`} className="text-indigo-700 font-semibold hover:underline">

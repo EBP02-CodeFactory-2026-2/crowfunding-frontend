@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { useUnsavedChanges } from "@/lib/useUnsavedChanges";
 import { CreateProjectRequest, Project, ApiError } from "@/types";
 
 type Mode = "DRAFT" | "ACTIVE";
@@ -27,17 +28,7 @@ export default function NewProjectPage() {
     else setCheckingAuth(false);
   }, [router]);
 
-
-  useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
-      if (isDirty) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [isDirty]);
+  useUnsavedChanges(isDirty);
 
   function update(patch: Partial<CreateProjectRequest>) {
     setForm((f) => ({ ...f, ...patch }));
@@ -87,9 +78,10 @@ export default function NewProjectPage() {
         router.push(`/projects/${created.id}`);
       } catch (pubErr) {
         const e = pubErr as ApiError;
+        const reason = e.details?.map((d) => d.issue).join(" ");
         sessionStorage.setItem(
           "flash",
-          `Se guardó como borrador, pero no se pudo publicar: ${e.message ?? "error del servidor"}`
+          `Se guardó como borrador, pero no se pudo publicar: ${[e.message, reason].filter(Boolean).join(": ") || "error del servidor"}`
         );
         router.push("/projects/my-projects");
       }

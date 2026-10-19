@@ -26,6 +26,7 @@ export default function ProjectDetailsPage() {
   const [amountError, setAmountError] = useState<string | null>(null);
   const [supporting, setSupporting] = useState(false);
   const [thanks, setThanks] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("SIMULATED_CARD");
   const [myStats, setMyStats] = useState<{
     currentAmount: number;
     backersCount: number;
@@ -82,7 +83,7 @@ export default function ProjectDetailsPage() {
           method: "POST",
           body: JSON.stringify({
             amount: value,
-            paymentMethod: "CARD",
+            paymentMethod,
             nonce: crypto.randomUUID(),
           }),
         },
@@ -185,6 +186,17 @@ export default function ProjectDetailsPage() {
           <h3 className="text-xl font-bold text-indigo-900 mb-4">Apoyar esta campaña</h3>
           <div className="flex flex-col sm:flex-row gap-4 items-start">
             <div className="flex-1 w-full">
+              <label htmlFor="paymentMethod" className="block text-sm font-semibold text-indigo-900 mb-1">
+                Método de pago
+              </label>
+              <select
+                id="paymentMethod"
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg text-base mb-3 bg-white text-gray-900"
+              >
+                <option value="SIMULATED_CARD">Tarjeta (simulada)</option>
+              </select>
               <input
                 type="number"
                 value={amount}

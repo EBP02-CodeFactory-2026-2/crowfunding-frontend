@@ -46,14 +46,13 @@ export default function NewProjectPage() {
     } else if (!form.title.trim()) {
       setError("Ponle al menos un título al borrador.");
       return;
-    }
+    } 
 
     setLoadingMode(mode);
     try {
-      const payload: Record<string, unknown> = {
-        title: form.title,
-        description: form.description,
-      };
+      const payload: Record<string, unknown> = {};
+      if (form.title.trim()) payload.title = form.title;
+      if (form.description.trim()) payload.description = form.description;
       if (form.imageUrl) payload.imageUrl = form.imageUrl;
       if (form.fundingGoal) payload.fundingGoal = form.fundingGoal;
       if (form.deadline) payload.deadline = new Date(form.deadline).toISOString();
@@ -89,6 +88,10 @@ export default function NewProjectPage() {
       const apiError = err as ApiError;
       if (apiError.status === 401 || apiError.status === 403) {
         setError("Tu sesión no es válida o expiró. Cierra sesión e inicia de nuevo.");
+      } else if (apiError.message?.includes("integridad")) {
+        setError(
+          "El servidor aún no acepta borradores incompletos. Completa título, descripción, meta y fecha límite para guardarlo."
+        );
       } else if (apiError.details) {
         setError(apiError.details.map((d) => d.issue).join(" "));
       } else {

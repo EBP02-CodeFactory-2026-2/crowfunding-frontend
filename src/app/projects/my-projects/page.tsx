@@ -72,7 +72,7 @@ export default function MyProjectsPage() {
   if (loading) return <p className="text-center mt-20 font-bold text-gray-600">Cargando...</p>;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 mt-10">
+    <main className="max-w-5xl mx-auto px-4 py-8 mt-10">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-extrabold text-gray-900">Mis Proyectos</h1>
         <Link href="/projects/new" className="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700">
@@ -103,6 +103,7 @@ export default function MyProjectsPage() {
                 {p.title}
               </Link>
               <p className="text-sm text-gray-600 mt-1 flex items-center gap-2 flex-wrap">
+                <span>Creado: {p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "—"}</span>
                 <span>Fecha límite: {p.deadline ? new Date(p.deadline).toLocaleDateString() : "—"}</span>
                 <span className="font-semibold text-indigo-700">{p.status}</span>
                 {p.status === "ACTIVE" && <RiskLabel tag={p.riskTag} />}
@@ -152,6 +153,6 @@ export default function MyProjectsPage() {
           </div>
         </div>
       )}
-    </div>
+    </main>
   );
 }

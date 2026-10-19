@@ -31,3 +31,5 @@ body {
   --background: #ffffff;
   --foreground: #171717;
 }
+
+::placeholder { color: #6b7280; opacity: 1; }

@@ -31,7 +31,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 mt-10">
+    <main className="max-w-6xl mx-auto px-4 py-8 mt-10">
       <h1 className="text-4xl font-extrabold text-gray-900 mb-8 text-center">Descubre Proyectos Increíbles</h1>
       
       {activeProjects.length === 0 ? (
@@ -45,6 +45,6 @@ export default function HomePage() {
           ))}
         </div>
       )}
-    </div>
+    </main>
   );
 }

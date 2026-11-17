@@ -43,6 +43,9 @@ export default function Navbar() {
               <Link href="/projects/new" className="text-gray-600 hover:text-indigo-600 font-medium transition-colors">
                 Crear Proyecto
               </Link>
+              <Link href="/contributions" className="text-gray-600 hover:text-indigo-600 font-medium transition-colors">
+                Mis Aportes
+              </Link>
               <button 
                 onClick={handleLogout}
                 className="ml-4 bg-red-50 text-red-700 px-4 py-2 rounded-lg font-semibold hover:bg-red-100 transition-colors"

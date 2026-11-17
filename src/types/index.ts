@@ -50,8 +50,9 @@ export interface Project {
   fundingGoal: number;
   currentAmount: number;
   deadline: string;
-  status: "DRAFT" | "ACTIVE" | "FUNDED" | "FAILED" | "CANCELLED";
+  status: "DRAFT" | "ACTIVE" | "FUNDED" | "FAILED" | "DELETED";
   createdAt?: string;
+  updatedAt?: string;
   riskTag?: string | null;
   riskScore?: number | null;
   backersCount?: number;
@@ -63,4 +64,36 @@ export interface CreateProjectRequest {
   imageUrl?: string;
   fundingGoal: number;
   deadline: string;
+}
+export type ContributionStatus = "PENDING" | "COMPLETED" | "REFUNDED" | "CANCELLED";
+
+export interface Contribution {
+  id: string;
+  projectName: string;
+  projectId: string;
+  amount: number;
+  status: ContributionStatus;
+  createdAt: string;
+}
+
+export interface Receipt {
+  receiptId: string;
+  contributionId: string;
+  projectName: string;
+  amount: number;
+  status: ContributionStatus;
+  transactionDetails: {
+    referenceCode: string;
+    paymentMethod: string;
+    processedAt: string;
+  };
+  generatedAt: string;
+}
+
+export interface AppNotification {
+  id: string;
+  type: "PROJECT_FUNDED" | "PROJECT_FAILED" | "REFUND_PROCESSED";
+  message: string;
+  isRead: boolean;
+  createdAt: string;
 }

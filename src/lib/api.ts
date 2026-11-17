@@ -20,7 +20,7 @@ export async function apiFetch<T>(
   const token =
     getToken() ??
     (typeof window !== "undefined" ? localStorage.getItem("token") : null);
-  if (token && (auth || endpoint.includes("projects"))) {
+  if (token && (auth || /projects|contributions|notifications/.test(endpoint))) {
     headers["Authorization"] = `Bearer ${token}`;
   }
 

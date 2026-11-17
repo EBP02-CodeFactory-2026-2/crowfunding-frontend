@@ -56,7 +56,8 @@ Auth: JWT. Header `Authorization: Bearer <accessToken>`.
 | GET | /api/v1/contributions/me | Protegido | Mis aportes. Filtro `?status=COMPLETED` |
 | GET | /api/v1/contributions/me/{id}/receipt | Protegido | Comprobante (JSON) |
 | POST | /api/v1/projects/{id}/process-closure | Sistema/Admin | Cierre y reembolsos (NO lo usa el front) |
-| ??? | Notificaciones | — | **Aún no existen.** El backend los agregará después |
+| GET | /api/v1/notifications/me | Protegido | Listar alertas del usuario |
+| PUT | /api/v1/notifications/{id}/read | Protegido | Marcar alerta como leída (204, idempotente; 403 si no es suya; 404 si no existe) |
 
 ### Formato de error unificado
 ```json
@@ -100,11 +101,14 @@ Lista: `[{ id, projectName, projectId, amount, status, createdAt }]`, de más re
 Errores: 403 (no es titular), 404 (no existe), 409 (aporte CANCELLED: no hay comprobante). El enmascarado de tarjeta lo hace el backend. La "descarga" se hace desde el front (imprimir / guardar como PDF o archivo generado en el navegador).
 
 ## 6. Decisiones acordadas con el backend
-1. **Notificaciones**: todavía no hay endpoints. Tipos en el modelo: `PROJECT_FUNDED`, `PROJECT_FAILED`; campos `id, type, message, is_read, created_at`. Mientras tanto la pantalla usa **datos de ejemplo (mock)**, aislados en un solo archivo para cambiarlos fácil por la API real.
+1. **Notificaciones**: YA existen los endpoints (ver tabla). Respuesta de `GET /notifications/me`: `[{ id, type, message, isRead, createdAt }]`. `type`: `PROJECT_FUNDED`, `PROJECT_FAILED`, `REFUND_PROCESSED`. El texto viene listo en `message` (el backend lo arma). Los montos del mensaje vienen con formato de texto del backend.
 2. **Fecha de cierre** de un proyecto FUNDED/FAILED = **`updatedAt`** del proyecto. ⚠️ El ejemplo de GET /projects/{id} solo muestra `createdAt`: confirmar con backend que el detalle incluya `updatedAt`.
 3. **Riesgo**: solo existe `riskTag`. El aviso de riesgo alto se basa en la etiqueta. **No mostrar "puntaje"** (los prototipos lo muestran, pero ese dato no llega).
 4. **Estados de aportes**: ver mapeo de la sección 5.
-5. Pendiente a confirmar con backend (si hace falta): número de patrocinadores en el reporte de cierre (el listado de "mis proyectos" ya trae `backersCount`), y endpoint de notificaciones y de marcar como leída.
+5. Pendiente a confirmar con backend: que `GET /projects/{id}` incluya `updatedAt` (hoy el ejemplo solo trae `createdAt`). El número de patrocinadores para el reporte de cierre sale de `backersCount` en `GET /projects/me`.
+6. `receiptId` del comprobante = "RCP-" + referenceCode. El medio de pago viene enmascarado por el backend (ej. `SIMULATED_CARD *** 4242`).
+7. El proyecto puede tener estado `DELETED` (no `CANCELLED`). `CANCELLED` es solo estado de aporte.
+8. Detalles del código existente: `apiFetch(endpoint, options, auth)` agrega el token si `auth` es true o si la ruta contiene projects/contributions/notifications. Los errores llegan como objeto `ApiError` con `status` y `message`. Helpers de formato en `src/lib/format.ts`.
 
 ## 7. Reglas de negocio (Sprint 2 y 3)
 - Eliminar proyecto solo si no tiene aportes.
@@ -125,7 +129,7 @@ Orden sugerido (de más simple a más compleja):
 5. **Formulario de aporte** — monto (mín. $10.000), método de pago (SIMULATED_CARD), nonce nuevo por intento.
 6. **Estados cerrados del proyecto** — HU-4.1.3. En el detalle, si es FUNDED: "Proyecto finalizado: meta alcanzada". Si es FAILED: "Proyecto caducado: no alcanzó su meta". Mostrar estado, monto recaudado, meta, fecha de cierre (`updatedAt`), botón "Apoyar" deshabilitado y mensaje "Esta campaña ya no recibe aportes". Si el backend responde 403 al aportar → modal con ese mensaje y "Volver al proyecto".
 7. **Reembolsos** — HU-4.1.4. En Mis aportes: estado Reembolsado + mensaje "No se realizará otra devolución por el mismo pago". En aporte de proyecto FUNDED: "Este proyecto fue financiado con éxito, el aporte no es reembolsable" y botón "Solicitar reembolso" deshabilitado.
-8. **Notificaciones** — HU-4.1.1 y 4.1.2 (con datos mock). Alerta de proyecto finalizado (nombre y monto total) y de caducado (nombre, recaudado, meta, y aviso de que los aportes serán reembolsados). **Sin datos personales de otros patrocinadores.** Una sola alerta por proyecto.
+8. **Notificaciones** — HU-4.1.1 y 4.1.2, con la API real (`/notifications/me` y marcar como leída). Alerta de proyecto finalizado (nombre y monto total) y de caducado (nombre, recaudado, meta, y aviso de que los aportes serán reembolsados). **Sin datos personales de otros patrocinadores.** Una sola alerta por proyecto.
 9. **Reporte de cierre (creador)** — HU-4.1.1 CA2 y 4.1.2 CA3. En "Mis proyectos": monto final, meta, patrocinadores, fecha de cierre; en caducados también el porcentaje alcanzado.
 
 ## 9. Flujo de trabajo con Git (para recordar)

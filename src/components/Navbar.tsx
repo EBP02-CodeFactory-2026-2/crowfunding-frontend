@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api";
 
 export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [unread, setUnread] = useState(0);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -13,6 +15,13 @@ export default function Navbar() {
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
     setIsLoggedIn(!!token);
+        if (token) {
+      apiFetch<{ isRead: boolean }[]>("/notifications/me", {}, true)
+        .then((list) => setUnread((list ?? []).filter((n) => !n.isRead).length))
+        .catch(() => setUnread(0));
+    } else {
+      setUnread(0);
+    }
   }, [pathname]);
 
   const handleLogout = () => {
@@ -45,6 +54,17 @@ export default function Navbar() {
               </Link>
               <Link href="/contributions" className="text-gray-600 hover:text-indigo-600 font-medium transition-colors">
                 Mis Aportes
+              </Link>
+              <Link href="/notifications" className="text-gray-600 hover:text-indigo-600 font-medium transition-colors">
+                Notificaciones
+                {unread > 0 && (
+                  <span
+                    className="ml-2 inline-block px-2 py-0.5 text-sm font-bold rounded-full bg-indigo-600 text-white"
+                    aria-label={`${unread} notificaciones sin leer`}
+                  >
+                    {unread}
+                  </span>
+                )}
               </Link>
               <button 
                 onClick={handleLogout}

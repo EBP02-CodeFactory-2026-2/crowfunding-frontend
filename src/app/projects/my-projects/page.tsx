@@ -8,6 +8,13 @@ import { getToken } from "@/lib/auth";
 import { Project, ApiError } from "@/types";
 import RiskLabel from "@/components/RiskLabel";
 
+const STATUS_LABEL: Record<string, string> = {
+  DRAFT: "Borrador",
+  ACTIVE: "Activo",
+  FUNDED: "Finalizado con éxito",
+  FAILED: "Caducado",
+};
+
 export default function MyProjectsPage() {
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
@@ -105,11 +112,18 @@ export default function MyProjectsPage() {
               <p className="text-sm text-gray-600 mt-1 flex items-center gap-2 flex-wrap">
                 <span>Creado: {p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "—"}</span>
                 <span>Fecha límite: {p.deadline ? new Date(p.deadline).toLocaleDateString() : "—"}</span>
-                <span className="font-semibold text-indigo-700">{p.status}</span>
+                                <span className="font-semibold text-indigo-700">
+                  {STATUS_LABEL[p.status as string] ?? p.status}
+                </span>
                 {p.status === "ACTIVE" && <RiskLabel tag={p.riskTag} />}
               </p>
             </div>
             <div className="flex gap-4 items-center">
+               {(p.status === "FUNDED" || p.status === "FAILED") && (
+                <Link href={`/projects/${p.id}/report`} className="text-indigo-700 font-semibold hover:underline">
+                  Ver reporte de cierre
+                </Link>
+              )}
               {p.status === "ACTIVE" && (
                 <Link href={`/projects/${p.id}/edit`} className="text-indigo-700 font-semibold hover:underline">
                   Editar

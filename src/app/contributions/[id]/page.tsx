@@ -187,7 +187,7 @@ export default function ContributionDetailPage() {
               <div role="alert" className="bg-red-50 border border-red-300 rounded-lg p-4 mb-6">
                 <p className="text-base font-bold text-red-900">Este aporte no se completó</p>
                 <p className="text-sm text-gray-800 mt-1">
-                  Realizado el {formatDateTime(contribution.createdAt)}.
+                  Realizado el {formatDateTime(contribution.createdAt)}
                 </p>
               </div>
             )}
@@ -224,7 +224,7 @@ export default function ContributionDetailPage() {
             <h2 className="text-xl font-bold text-gray-900">Información del aporte</h2>
             <p className="text-sm text-gray-700 mt-3">Proyecto: {contribution.projectName}</p>
             <p className="text-sm text-gray-700 mt-3">
-              Realizado el {formatDateTime(contribution.createdAt)}.
+              Realizado el {formatDateTime(contribution.createdAt)}
             </p>
             <p className="text-sm text-gray-700 mt-3">
               Los aportes de campañas exitosas no son reembolsables.

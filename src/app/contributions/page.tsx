@@ -129,7 +129,7 @@ export default function MyContributionsPage() {
                   <th scope="col" className="px-4 py-3 font-semibold">Monto</th>
                   <th scope="col" className="px-4 py-3 font-semibold">Fecha y hora</th>
                   <th scope="col" className="px-4 py-3 font-semibold">Estado</th>
-                  <th scope="col" className="px-4 py-3 font-semibold">Comprobante</th>
+                  <th scope="col" className="px-4 py-3 font-semibold">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -159,14 +159,25 @@ export default function MyContributionsPage() {
                           {st.label}
                         </span>
                       </td>
-                    <td className="px-4 py-4">
-                        <Link
-                          href={`/contributions/${c.id}/receipt`}
-                          className="font-semibold text-indigo-700 hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          Ver comprobante
-                        </Link>
+                                          <td className="px-4 py-4">
+                        <div className="flex flex-col gap-1">
+                          <Link
+                            href={`/contributions/${c.id}`}
+                            className="font-semibold text-indigo-700 hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Ver detalle
+                          </Link>
+                          {c.status !== "CANCELLED" && (
+                            <Link
+                              href={`/contributions/${c.id}/receipt`}
+                              className="font-semibold text-indigo-700 hover:underline"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              Ver comprobante
+                            </Link>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

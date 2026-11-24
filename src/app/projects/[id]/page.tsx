@@ -34,6 +34,10 @@ const STATUS_CLS: Record<string, string> = {
   DELETED: "bg-gray-100 text-gray-800",
 };
 
+// La meta se considera alcanzada cuando lo recaudado es mayor o igual a la meta
+const isGoalReached = (p?: Project | null) =>
+  !!p && (p.fundingGoal ?? 0) > 0 && (p.currentAmount ?? 0) >= (p.fundingGoal ?? 0);
+
 function Modal({
   title,
   children,
@@ -137,6 +141,16 @@ export default function ProjectDetailsPage() {
       return;
     }
 
+    // Proyecto cerrado (por tiempo o por meta alcanzada): no se puede aportar
+    if (
+      project?.status === "FUNDED" ||
+      project?.status === "FAILED" ||
+      isGoalReached(project)
+    ) {
+      setModal("closed");
+      return;
+    }
+
     const isHighRisk =
       project?.status === "ACTIVE" && /ALT|HIGH/i.test(project?.riskTag ?? "");
     if (isHighRisk && !riskAccepted) {
@@ -182,7 +196,11 @@ export default function ProjectDetailsPage() {
         try {
           const fresh = await apiFetch<Project>(`/projects/${id}`);
           setProject(fresh);
-          if (fresh.status === "FUNDED" || fresh.status === "FAILED") {
+          if (
+            fresh.status === "FUNDED" ||
+            fresh.status === "FAILED" ||
+            isGoalReached(fresh)
+          ) {
             setModal("closed");
             return;
           }
@@ -209,16 +227,20 @@ export default function ProjectDetailsPage() {
   if (!project)
     return <div className="text-center mt-20 text-gray-700">Proyecto no encontrado.</div>;
 
-  const status = project.status as string;
-  const isClosed = status === "FUNDED" || status === "FAILED";
-  const highRisk = status === "ACTIVE" && /ALT|HIGH/i.test(project.riskTag ?? "");
-
   const raised = project.currentAmount ?? 0;
   const goal = project.fundingGoal ?? 0;
   const progress = goal > 0 ? Math.min((raised / goal) * 100, 100) : 0;
 
-  const closedOn = project.updatedAt
-    ? new Date(project.updatedAt).toLocaleDateString("es-CO", {
+  // Si el back aún dice ACTIVE pero la meta ya se alcanzó, lo tratamos como FUNDED
+  const rawStatus = project.status as string;
+  const status = rawStatus === "ACTIVE" && isGoalReached(project) ? "FUNDED" : rawStatus;
+
+  const isClosed = status === "FUNDED" || status === "FAILED";
+  const highRisk = status === "ACTIVE" && /ALT|HIGH/i.test(project.riskTag ?? "");
+
+  // Fecha límite de la campaña (dato real del proyecto)
+  const deadlineText = project.deadline
+    ? new Date(project.deadline as string).toLocaleDateString("es-CO", {
         day: "numeric",
         month: "short",
         year: "numeric",
@@ -285,8 +307,10 @@ export default function ProjectDetailsPage() {
               <p className="text-xl font-extrabold text-gray-900">{formatMoney(goal)}</p>
             </div>
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-              <p className="text-sm text-gray-700">Fecha de cierre</p>
-              <p className="text-xl font-extrabold text-gray-900">{closedOn}</p>
+              <p className="text-sm text-gray-700">
+                {status === "FUNDED" ? "Fecha límite original" : "Fecha límite"}
+              </p>
+              <p className="text-xl font-extrabold text-gray-900">{deadlineText}</p>
             </div>
           </div>
 
@@ -474,7 +498,7 @@ export default function ProjectDetailsPage() {
       {modal === "closed" && (
         <Modal title="Esta campaña ya no recibe aportes" onClose={closeModal}>
           <p className="text-base text-gray-800 mt-3">
-            El proyecto ya está {project.status === "FUNDED" ? "finalizado" : "caducado"} y
+            El proyecto ya está {status === "FUNDED" ? "finalizado" : "caducado"} y
             no es posible procesar tu aporte. No se realizó ningún cobro.
           </p>
           <div className="mt-6">

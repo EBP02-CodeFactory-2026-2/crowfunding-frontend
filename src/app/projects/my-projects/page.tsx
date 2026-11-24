@@ -15,6 +15,16 @@ const STATUS_LABEL: Record<string, string> = {
   FAILED: "Caducado",
 };
 
+// La meta se considera alcanzada cuando lo recaudado es mayor o igual a la meta
+const isGoalReached = (p: Project) =>
+  (p.fundingGoal ?? 0) > 0 && (p.currentAmount ?? 0) >= (p.fundingGoal ?? 0);
+
+// Si el back aún dice ACTIVE pero la meta ya se alcanzó, lo tratamos como FUNDED
+const effectiveStatus = (p: Project): string => {
+  const s = p.status as string;
+  return s === "ACTIVE" && isGoalReached(p) ? "FUNDED" : s;
+};
+
 export default function MyProjectsPage() {
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
@@ -34,10 +44,33 @@ export default function MyProjectsPage() {
       setFlash(f);
       sessionStorage.removeItem("flash");
     }
+
     apiFetch<Project[]>("/projects/me", {}, true)
-      .then((data) =>
-        setProjects((data ?? []).filter((p) => (p.status as string) !== "DELETED"))
-      )
+      .then(async (data) => {
+        const list = (data ?? []).filter((p) => (p.status as string) !== "DELETED");
+
+        // /projects/me puede venir sin meta ni recaudado: los completamos
+        // con el detalle de cada proyecto activo para saber si ya llegó a la meta
+        const completed = await Promise.all(
+          list.map(async (p) => {
+            if ((p.status as string) !== "ACTIVE") return p;
+            try {
+              const d = await apiFetch<Project>(`/projects/${p.id}`);
+              return {
+                ...p,
+                fundingGoal: d.fundingGoal ?? p.fundingGoal,
+                currentAmount: d.currentAmount ?? p.currentAmount,
+                createdAt: p.createdAt ?? d.createdAt,
+                deadline: p.deadline ?? d.deadline,
+              } as Project;
+            } catch {
+              return p;
+            }
+          })
+        );
+
+        setProjects(completed);
+      })
       .catch((e: ApiError) =>
         setError(`No se pudieron cargar tus proyectos (${e.status ?? "sin conexión"}).`)
       )
@@ -103,52 +136,55 @@ export default function MyProjectsPage() {
       )}
 
       <div className="grid gap-4">
-        {projects.map((p) => (
-          <div key={p.id} className="bg-white p-5 rounded-xl shadow-md border border-gray-100 flex flex-wrap justify-between items-center gap-4">
-            <div>
-              <Link href={`/projects/${p.id}`} className="text-xl font-bold text-gray-900 hover:text-indigo-700">
-                {p.title}
-              </Link>
-              <p className="text-sm text-gray-600 mt-1 flex items-center gap-2 flex-wrap">
-                <span>Creado: {p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "—"}</span>
-                <span>Fecha límite: {p.deadline ? new Date(p.deadline).toLocaleDateString() : "—"}</span>
-                                <span className="font-semibold text-indigo-700">
-                  {STATUS_LABEL[p.status as string] ?? p.status}
-                </span>
-                {p.status === "ACTIVE" && <RiskLabel tag={p.riskTag} />}
-              </p>
-            </div>
-            <div className="flex gap-4 items-center">
-               {(p.status === "FUNDED" || p.status === "FAILED") && (
-                <Link href={`/projects/${p.id}/report`} className="text-indigo-700 font-semibold hover:underline">
-                  Ver reporte de cierre
+        {projects.map((p) => {
+          const status = effectiveStatus(p);
+          return (
+            <div key={p.id} className="bg-white p-5 rounded-xl shadow-md border border-gray-100 flex flex-wrap justify-between items-center gap-4">
+              <div>
+                <Link href={`/projects/${p.id}`} className="text-xl font-bold text-gray-900 hover:text-indigo-700">
+                  {p.title}
                 </Link>
-              )}
-              {p.status === "ACTIVE" && (
-                <Link href={`/projects/${p.id}/edit`} className="text-indigo-700 font-semibold hover:underline">
-                  Editar
-                </Link>
-              )}
-              {p.status === "DRAFT" && (
-                <>
+                <p className="text-sm text-gray-600 mt-1 flex items-center gap-2 flex-wrap">
+                  <span>Creado: {p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "—"}</span>
+                  <span>Fecha límite: {p.deadline ? new Date(p.deadline).toLocaleDateString() : "—"}</span>
+                  <span className="font-semibold text-indigo-700">
+                    {STATUS_LABEL[status] ?? status}
+                  </span>
+                  {status === "ACTIVE" && <RiskLabel tag={p.riskTag} />}
+                </p>
+              </div>
+              <div className="flex gap-4 items-center">
+                {(status === "FUNDED" || status === "FAILED") && (
+                  <Link href={`/projects/${p.id}/report`} className="text-indigo-700 font-semibold hover:underline">
+                    Ver reporte de cierre
+                  </Link>
+                )}
+                {status === "ACTIVE" && (
                   <Link href={`/projects/${p.id}/edit`} className="text-indigo-700 font-semibold hover:underline">
                     Editar
                   </Link>
-                  <button
-                    onClick={() => publish(p)}
-                    disabled={publishingId === p.id}
-                    className="bg-indigo-600 text-white font-semibold px-3 py-1.5 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-                  >
-                    {publishingId === p.id ? "Publicando..." : "Publicar"}
-                  </button>
-                </>
-              )}
-              <button onClick={() => setToDelete(p)} className="text-red-700 font-semibold hover:underline">
-                Eliminar
-              </button>
+                )}
+                {status === "DRAFT" && (
+                  <>
+                    <Link href={`/projects/${p.id}/edit`} className="text-indigo-700 font-semibold hover:underline">
+                      Editar
+                    </Link>
+                    <button
+                      onClick={() => publish(p)}
+                      disabled={publishingId === p.id}
+                      className="bg-indigo-600 text-white font-semibold px-3 py-1.5 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                    >
+                      {publishingId === p.id ? "Publicando..." : "Publicar"}
+                    </button>
+                  </>
+                )}
+                <button onClick={() => setToDelete(p)} className="text-red-700 font-semibold hover:underline">
+                  Eliminar
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {toDelete && (
@@ -170,3 +206,4 @@ export default function MyProjectsPage() {
     </main>
   );
 }
+        
